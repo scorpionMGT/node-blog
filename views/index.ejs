@@ -1,0 +1,34 @@
+<% if (!user) { %>
+	<div class="hero-unit">
+		<h1>欢迎来到 Microblog</h1>
+		<p>Microblog 是一个基于 Node.js 的微博系统。</p>
+		<p>
+			<a class="btn btn-primary btn-large" href="/login">登录</a>
+			<a class="btn btn-large" href="/reg">立即注册</a>
+		</p>
+	</div>
+	<% } else { %>
+		<%- partial('say') %>
+			<% } %>
+			<%- partial('posts', {posts:posts}) %>
+
+
+					<!-- 栅格系统 -->
+					<div class="container">
+						<div class="row">
+							<div class="col-md-4">
+								<h2>MGT360124说</h2>
+								<p>日前，浙江大学计算机科学与技术学院的一线教师翁恺， 因爱生重教、教学贡献突出，获“浙江大学永平杰出教学贡献奖”， 奖金100万元。据了解，这个奖由浙大校友段永平于2011年设立。
+								</p>
+							</div>
+							<div class="col-md-4">
+								<h2>MGT360124说</h2>
+								<p>大学要设立教学大奖，但要全面提高人才培养质量， 还需要高校做更多踏踏实实的“以人才培养为中心”的教师管理、评价改革，这需要啃硬骨头， 打破既得利益，改革、调整以学术研究为主的教师考核、评价体系基础，改变学校重学术研究 、轻人才培养的办学生态。
+								</p>
+							</div>
+							<div class="col-md-4">
+								<h2>MGT360124说</h2>
+								<p>当拼多多野蛮生长时，已经引起了淘宝和京东等的注意， 并且迅速做出了反制措施。今年三月，淘宝上线“特价版”， 而京东则是上线了“京东拼购”。基本主流电商已经对拼多多形成了合围之势。
+								</p>
+							</div>
+						</div>

@@ -8,13 +8,18 @@ const crypto = require("crypto-browserify");
 const session = require("express-session");
 const MongoStore = require('connect-mongo')(session);
 const flash = require("connect-flash");
-const partials = require('express-partials');
 const util = require("util");
 
 const setting = require('./setting');
 const User = require('./models/user');
 const Post = require('./models/post');
 const index = require('./routes/index');
+const reg = require("./routes/reg");
+const login = require("./routes/login");
+const logout = require("./routes/logout");
+const post = require("./routes/post");
+const helper = require("./routes/helper");
+const error = require("./routes/error");
 const app = express();
 
 // view engine setup
@@ -40,8 +45,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-app.use(partials());
 app.use(session({
   secret: setting.cookieSecret,
   resave: false,
@@ -62,181 +65,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// app.use('/', index);
-app.get('/', function (req, res) {
-  Post.get(null, function (err, posts) {
-    if (err) {
-        posts = [];
-    }
-    res.render('index', {
-      title: '首页',
-      posts: posts,
-      user : req.session.user,
-			success : req.flash('success').toString(),
-			error : req.flash('error').toString()
-    });
-  });
-});
-
-app.get("/helper", (req, res) => {
-  res.render("helper", {
-    title: "Helpers",
-  })
-});
 
 //微博页面的路由规则
-
+// 博客首页路由
+app.use(index);
 //注册页路由
-app.get('/reg', checkNotLogin);
-app.get("/reg", (req, res, next) => {
-  res.render("reg", { title: "注册页面" });
-
-});
-
-app.post('/reg', checkNotLogin);
-app.post("/reg", (req, res, next) => {
-  //检验用户两次输入的口令是否一致
-  if (req.body['password-repeat'] != req.body['password']) {
-    let error = req.flash('error', '两次输入的口令不一致');
-    return res.redirect('/reg');
-  }
-  //生成口令的散列值
-  const md5 = crypto.createHash('md5');
-  const password = md5.update(req.body.password).digest('base64');
-  const newUser = new User({
-    name: req.body.username,
-    password: password,
-  });
-  //检查用户名是否已经存在
-  User.get(newUser.name, (err, user) => {
-    if (user) err = '用户已经存在!';
-    if (err) {
-      req.flash('error', err);
-      return res.redirect('/reg');
-    }
-    //如果不存在则新增用户
-    newUser.save((err) => {
-      if (err) {
-        req.flash('error', err);
-        return res.redirect('/reg');
-      }
-      req.session.user = newUser;
-      req.flash('success', '注册成功');
-      res.redirect('/');
-    });
-  });
-});
-
-
-// 用户登录页的路由
-app.get('/login', checkNotLogin);
-app.get("/login", (req, res, next) => {
-  res.render('login', {
-    title: '用户登入',
-  });
-});
-
-app.post('/login', checkNotLogin);
-app.post("/login", (req, res, next) => {
-  //生成口令的散列值
-  const md5 = crypto.createHash('md5');
-  const password = md5.update(req.body.password).digest('base64');
-  User.get(req.body.username, (err, user) => {
-    if (!user) {
-      req.flash('error', '用户不存在');
-      return res.redirect('/login');
-    }
-    if (user.password != password) {
-      req.flash('error', '用户口令错误');
-      return res.redirect('/login');
-    }
-    req.session.user = user;
-    req.flash('success', '登入成功');
-    res.redirect('/');
-  });
-});
-
-// 用户退出登录的路由
-app.get('/logout', checkLogin);
-app.get("/logout", (req, res, next) => {
-  req.session.user = null;
-  req.flash('success', '退出成功');
-  res.redirect('/');
-});
-
-
-app.get('/u/:user', (req, res) => {
-  User.get(req.params.user, (err, user) => {
-    if (!user) {
-      req.flash('error', '用户不存在');
-      return res.redirect('/');
-    }
-    Post.get(user.name, (err, posts) => {
-      if (err) {
-        req.flash('error', err);
-        return res.redirect('/');
-      }
-      res.render('user', {
-        title: user.name,
-        posts: posts,
-      });
-    });
-  });
-});
-
-
-// 用户发表博客的路由
-app.get("/post", checkLogin)
-app.get("/post", (req, res, next) => {
-  res.redirect(`/u/${req.session.user}`);
-})
-
-app.post('/post', checkLogin);
-app.post('/post', function (req, res) {
-  let currentUser = req.session.user;
-  let post = new Post(currentUser.name, req.body.post);
-  post.save(function (err) {
-    if (err) {
-      req.flash('error', err);
-      return res.redirect('/');
-    }
-    req.flash('success', '发表成功');
-    res.redirect('/u/' + currentUser.name);
-  });
-});
-
-
-function checkLogin(req, res, next) {
-  if (!req.session.user) {
-    req.flash('error', '未登入');
-    return res.redirect('/login');
-  }
-  next();
-}
-function checkNotLogin(req, res, next) {
-  if (req.session.user) {
-    req.flash('error', '已登入');
-    return res.redirect('/');
-  }
-  next();
-}
-
-
-// catch 404 and forward to error handler
-app.use((req, res, next) => {
-  const err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-// error handler
-app.use((err, req, res, next) => {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+app.use(reg);
+//登录页路由
+app.use(login);
+//退出页路由
+app.use(logout);
+//发表留言页的路由
+app.use(post);
+//帮助页的路由
+app.use(helper)
+// 错误处理页的路由
+app.use(error);
 
 module.exports = app;

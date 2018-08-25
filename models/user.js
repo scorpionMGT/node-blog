@@ -1,4 +1,4 @@
-const mongodb = require('./db');
+const mongodb = require('./mongodb.js');
 function User(options) {
     this.name = options.name;
     this.password = options.password;
